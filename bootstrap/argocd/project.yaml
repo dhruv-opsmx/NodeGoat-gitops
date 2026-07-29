@@ -9,7 +9,7 @@ metadata:
 spec:
   description: GitOps project for the NodeGoat demo platform
   sourceRepos:
-    - https://github.com/opsmx/nodegoat-gitops.git
+    - https://github.com/dhruv-opsmx/nodegoat-gitops.git
   destinations:
     - namespace: 'dev'
       server: https://kubernetes.default.svc
