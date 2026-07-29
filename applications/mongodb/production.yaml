@@ -10,7 +10,7 @@ metadata:
 spec:
   project: platform-project
   source:
-    repoURL: https://github.com/opsmx/nodegoat-gitops.git
+    repoURL: https://github.com/dhruv-opsmx/nodegoat-gitops.git
     targetRevision: HEAD
     path: charts/mongodb
     helm:
