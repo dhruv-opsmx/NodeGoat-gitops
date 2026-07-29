@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+      - name: Lint charts
+        run: |
+          helm lint charts/mongodb
+          helm lint charts/nodegoat
+      - name: Render charts
+        run: |
+          helm template mongodb ./charts/mongodb >/dev/null
+          helm template nodegoat ./charts/nodegoat >/dev/null

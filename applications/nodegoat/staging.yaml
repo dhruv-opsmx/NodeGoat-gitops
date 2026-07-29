@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: staging-nodegoat
+  namespace: argocd
+  labels:
+    platform: gitops
+    environment: staging
+    component: application
+spec:
+  project: platform-project
+  source:
+    repoURL: https://github.com/opsmx/nodegoat-gitops.git
+    targetRevision: HEAD
+    path: charts/nodegoat
+    helm:
+      releaseName: nodegoat
+      valueFiles:
+        - ../../environments/staging/nodegoat-values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

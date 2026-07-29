@@ -1,0 +1,12 @@
+replicaCount: 1
+
+image:
+  repository: mongo
+  tag: "5.0"
+  pullPolicy: IfNotPresent
+
+storage:
+  className: ""
+  size: 8Gi
+
+resources: {}

@@ -1,0 +1,44 @@
+replicaCount: 1
+
+image:
+  repository: 845322645174.dkr.ecr.us-east-1.amazonaws.com/opsmx/nodegoat
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 4000
+
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: 4000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: 4000
+  initialDelaySeconds: 30
+  periodSeconds: 15
+
+mongodb:
+  uri: mongodb://mongodb:27017/NodeGoat
