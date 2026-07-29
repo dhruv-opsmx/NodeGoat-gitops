@@ -10,8 +10,10 @@ spec:
   project: platform-project
   source:
     repoURL: https://github.com/opsmx/nodegoat-gitops.git
-    targetRevision: HEAD
+    targetRevision: main
     path: applications
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
