@@ -9,7 +9,7 @@ metadata:
 spec:
   project: platform-project
   source:
-    repoURL: https://github.com/opsmx/nodegoat-gitops.git
+    repoURL: https://github.com/dhruv-opsmx/NodeGoat-gitops.git
     targetRevision: main
     path: applications
     directory:
