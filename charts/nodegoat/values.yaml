@@ -11,8 +11,9 @@ service:
   targetPort: 4000
 
 ingress:
-  enabled: true
+  enabled: false
   className: alb
+  scheme: internet-facing
   annotations:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing

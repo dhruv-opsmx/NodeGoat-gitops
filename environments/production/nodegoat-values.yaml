@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 2
 
 image:
   repository: 845322645174.dkr.ecr.us-east-1.amazonaws.com/opsmx/nodegoat
@@ -13,6 +13,7 @@ service:
 ingress:
   enabled: true
   className: alb
+  scheme: internet-facing
   annotations:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing

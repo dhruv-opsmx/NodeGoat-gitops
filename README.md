@@ -369,6 +369,12 @@ Production
 http://<PRODUCTION-ALB>
 ```
 
+Command:
+
+```
+kubectl get ingress -A
+```
+
 ---
 
 # Updating the Application
