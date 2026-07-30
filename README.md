@@ -1,56 +1,48 @@
-# 🚀 NodeGoat Enterprise GitOps Platform
+# NodeGoat Enterprise GitOps Platform
 
-A production-style GitOps deployment of the OWASP NodeGoat application on **Amazon EKS** using **Argo CD**, **Helm**, **GitHub**, and **Amazon ECR**.
+A production-style multi-environment GitOps platform built on Amazon EKS using Argo CD, Helm and GitHub.
 
-This repository follows the **App of Apps** GitOps pattern and manages three independent environments:
+This project demonstrates how a single Git repository can declaratively manage Kubernetes applications across Development, Staging and Production environments using the App-of-Apps pattern.
 
-- Development
-- Staging
-- Production
+> **Current Status:** ✅ Operational
 
-This repository serves as the **GitOps Source of Truth**.
+---
+
+# Features
+
+- Multi-environment deployments
+- App-of-Apps architecture
+- Helm-based deployments
+- GitOps workflow
+- Amazon EKS
+- AWS Load Balancer Controller
+- Environment-specific configuration
+- MongoDB StatefulSets
+- Automatic reconciliation with Argo CD
 
 ---
 
 # Architecture
 
 ```
-Developer
-     │
-     ▼
-Git Commit
-     │
-     ▼
-GitHub Repository
-     │
-     ▼
-Argo CD (Root Application)
-     │
-     ▼
-App of Apps
-     │
- ┌───┴───────────────┐
- ▼                   ▼
-Dev              Staging            Production
- │                   │                   │
- ├── MongoDB         ├── MongoDB         ├── MongoDB
- └── NodeGoat        └── NodeGoat        └── NodeGoat
+                    Git Commit
+                         │
+                         ▼
+                 GitHub Repository
+                         │
+                         ▼
+                  Argo CD Root App
+                         │
+               App-of-Apps Pattern
+                         │
+        ┌────────────────┼────────────────┐
+        ▼                ▼                ▼
+      Development      Staging       Production
+           │               │               │
+      ┌────┴────┐     ┌────┴────┐     ┌────┴────┐
+      ▼         ▼     ▼         ▼     ▼         ▼
+  MongoDB   NodeGoat MongoDB NodeGoat MongoDB NodeGoat
 ```
-
----
-
-# Technology Stack
-
-- Amazon EKS
-- Kubernetes
-- Argo CD
-- Helm
-- GitHub
-- GitHub Actions
-- Amazon ECR
-- AWS Load Balancer Controller
-- MongoDB
-- NodeGoat
 
 ---
 
@@ -77,82 +69,26 @@ Dev              Staging            Production
 └── README.md
 ```
 
-## applications/
+---
 
-Contains Argo CD Application manifests.
+# Environment Overview
 
-Each file represents one deployable application.
-
-Example:
-
-```
-applications/nodegoat/dev.yaml
-```
-
-deploys
-
-```
-charts/nodegoat
-```
-
-using
-
-```
-environments/dev/nodegoat-values.yaml
-```
+| Environment | Namespace | Exposure |
+|------------|-----------|----------|
+| Development | `dev` | Internal ALB |
+| Staging | `staging` | Internal ALB |
+| Production | `production` | Internet-facing ALB |
 
 ---
 
-## charts/
-
-Contains Helm charts.
-
-```
-charts/nodegoat
-```
-
-deploys NodeGoat.
-
-```
-charts/mongodb
-```
-
-deploys MongoDB.
-
----
-
-## environments/
-
-Environment-specific values.
-
-```
-dev/
-staging/
-production/
-```
-
-Only values differ.
-
-Charts remain identical.
-
----
-
-## bootstrap/
-
-Everything required to bootstrap Argo CD.
-
-Contains:
-
-- AppProject
-- Root Application
-- Installation manifests
-
----
-
-# GitOps Flow
+# Deployment Flow
 
 ```
 Developer
+
+↓
+
+git commit
 
 ↓
 
@@ -164,7 +100,7 @@ GitHub
 
 ↓
 
-Argo CD detects change
+Argo CD detects changes
 
 ↓
 
@@ -172,38 +108,18 @@ Helm renders manifests
 
 ↓
 
-Kubernetes updates cluster
-```
+Kubernetes reconciles state
 
-No manual
+↓
 
+AWS Load Balancer Controller provisions infrastructure
 ```
-kubectl apply
-```
-
-or
-
-```
-helm upgrade
-```
-
-should be necessary after bootstrap.
 
 ---
 
-# Environments
+# Bootstrap
 
-| Environment | Namespace |
-|------------|-----------|
-| Development | dev |
-| Staging | staging |
-| Production | production |
-
----
-
-# Deploying From Scratch
-
-## 1. Clone
+## Clone
 
 ```bash
 git clone https://github.com/dhruv-opsmx/NodeGoat-gitops.git
@@ -213,23 +129,15 @@ cd NodeGoat-gitops
 
 ---
 
-## 2. Configure kubectl
-
-Verify you're connected to the EKS cluster.
+## Verify Kubernetes Context
 
 ```bash
 kubectl config current-context
 ```
 
-Expected:
-
-```
-arn:aws:eks:...
-```
-
 ---
 
-## 3. Install Argo CD
+## Install Argo CD
 
 ```bash
 kubectl create namespace argocd
@@ -242,7 +150,7 @@ kubectl apply \
 
 ---
 
-## 4. Bootstrap
+## Bootstrap GitOps
 
 ```bash
 kubectl apply -f bootstrap/argocd/project.yaml
@@ -252,13 +160,13 @@ kubectl apply -f bootstrap/argocd/root.yaml
 
 ---
 
-## 5. Verify
+# Verify
 
 ```bash
 kubectl get applications -n argocd
 ```
 
-Expected:
+Expected
 
 ```
 root                  Healthy
@@ -269,6 +177,99 @@ staging-mongodb       Healthy
 production-nodegoat   Healthy
 production-mongodb    Healthy
 ```
+
+---
+
+# Access
+
+## Production
+
+Public
+
+```
+http://<production-alb>
+```
+
+---
+
+## Development
+
+Internal AWS ALB
+
+Accessible only from within the VPC or connected network.
+
+---
+
+## Staging
+
+Internal AWS ALB
+
+Accessible only from within the VPC or connected network.
+
+---
+
+## Argo CD
+
+Currently exposed via Kubernetes port-forward.
+
+```bash
+kubectl port-forward svc/argocd-server \
+-n argocd \
+8080:443
+```
+
+Browse to
+
+```
+https://localhost:8080
+```
+
+Retrieve the initial admin password
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret \
+-o jsonpath="{.data.password}" | base64 --decode && echo
+```
+
+---
+
+# Discover Endpoints
+
+## Applications
+
+```bash
+kubectl get ingress -A
+```
+
+## Services
+
+```bash
+kubectl get svc -A
+```
+
+---
+
+# GitOps Workflow
+
+To deploy a change
+
+1. Update Helm values or manifests.
+2. Commit.
+3. Push to GitHub.
+
+Example
+
+```bash
+git add .
+
+git commit -m "Increase dev replicas"
+
+git push origin main
+```
+
+Argo CD will automatically reconcile the cluster.
+
+No manual deployment commands are required.
 
 ---
 
@@ -290,10 +291,10 @@ kubectl get pods -A
 
 ---
 
-## Services
+## Deployments
 
 ```bash
-kubectl get svc -A
+kubectl get deployments -A
 ```
 
 ---
@@ -302,14 +303,6 @@ kubectl get svc -A
 
 ```bash
 kubectl get ingress -A
-```
-
----
-
-## Describe an Application
-
-```bash
-kubectl describe application dev-nodegoat -n argocd
 ```
 
 ---
@@ -325,109 +318,9 @@ argocd.argoproj.io/refresh=hard \
 
 ---
 
-# Live Endpoints
-
-## Argo CD UI
-
-```
-https://<ARGOCD-LOADBALANCER>
-```
-
-or
-
-```
-kubectl port-forward svc/argocd-server \
--n argocd \
-8080:443
-```
-
-Open
-
-```
-https://localhost:8080
-```
-
----
-
-## NodeGoat
-
-Development
-
-```
-http://<DEV-ALB>
-```
-
-Staging
-
-```
-http://<STAGING-ALB>
-```
-
-Production
-
-```
-http://<PRODUCTION-ALB>
-```
-
-Command:
-
-```
-kubectl get ingress -A
-```
-
----
-
-# Updating the Application
-
-Update any environment values.
-
-Example:
-
-```
-environments/dev/nodegoat-values.yaml
-```
-
-Commit
-
-```bash
-git add .
-
-git commit -m "Increase replicas"
-
-git push
-```
-
-Argo CD will automatically synchronize the deployment.
-
----
-
 # Troubleshooting
 
-## Verify Kubernetes
-
-```bash
-kubectl get pods -A
-```
-
----
-
-## Verify Argo CD
-
-```bash
-kubectl get applications -n argocd
-```
-
----
-
-## Verify Repository
-
-```bash
-git remote -v
-```
-
----
-
-## Verify Cluster
+## Verify Current Context
 
 ```bash
 kubectl config current-context
@@ -435,35 +328,87 @@ kubectl config current-context
 
 ---
 
-# Future Enhancements
+## Verify Cluster
 
-- OpsMx SSD integration
-- Progressive Delivery
-- Blue/Green deployments
-- Canary deployments
-- Approval Gates
-- Rollbacks
-- Security Scanning
-- GitHub Actions CI
-- Policy Enforcement
-- Monitoring & Dashboards
+```bash
+kubectl get nodes
+```
+
+---
+
+## Verify Applications
+
+```bash
+kubectl get applications -n argocd
+```
+
+---
+
+## Verify Pods
+
+```bash
+kubectl get pods -A
+```
+
+---
+
+## Verify Ingresses
+
+```bash
+kubectl get ingress -A
+```
+
+---
+
+# Current Infrastructure
+
+- Amazon EKS
+- Amazon ECR
+- GitHub
+- GitHub Actions
+- Argo CD
+- Helm
+- MongoDB
+- AWS Load Balancer Controller
+
+---
+
+# Roadmap
+
+- [x] Multi-environment GitOps
+- [x] Helm
+- [x] App-of-Apps
+- [x] AWS ALB Ingress
+- [x] Internal Dev & Staging
+- [x] Public Production
+- [ ] GitOps deployment validation
+- [ ] OpsMx SSD integration
+- [ ] Progressive Delivery
+- [ ] Canary deployments
+- [ ] Blue/Green deployments
+- [ ] Approval Gates
+- [ ] Automated Rollbacks
+- [ ] Monitoring & Dashboards
 
 ---
 
 # Lessons Learned
 
-Some notable issues encountered while building this platform:
+Some key operational challenges encountered while building this platform:
 
-- Incorrect Kubernetes context (Kind vs EKS)
-- Argo CD installed into the wrong namespace
-- AWS pod density limits requiring node group scaling
-- Repository URL mismatches
+- Kubernetes context mismatches
+- Argo CD bootstrap configuration
 - AppProject repository restrictions
-- Child Application repository references
-- App of Apps bootstrap troubleshooting
+- Repository URL mismatches
+- AWS pod density limits
+- Helm values management
+- Environment-specific GitOps deployments
+- AWS ALB provisioning
 
-Keeping these documented should make future debugging much faster.
+These are intentionally documented to make future maintenance and onboarding easier.
 
 ---
 
-Built as a hands-on GitOps learning project and a foundation for enterprise deployment workflows with Argo CD and OpsMx SSD.
+# License
+
+MIT
