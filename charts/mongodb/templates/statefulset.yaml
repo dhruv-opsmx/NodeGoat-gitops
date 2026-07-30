@@ -6,7 +6,7 @@ metadata:
     {{- include "mongodb.labels" . | nindent 4 }}
 spec:
   serviceName: {{ include "mongodb.fullname" . }}
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ ternary 0 .Values.replicaCount .Values.labMode.enabled }}
   selector:
     matchLabels:
       {{- include "mongodb.selectorLabels" . | nindent 6 }}

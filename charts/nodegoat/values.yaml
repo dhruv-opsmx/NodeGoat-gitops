@@ -1,3 +1,6 @@
+# NodeGoat uses express-session MemoryStore. Running multiple replicas without
+# a shared session store causes users to be logged out when requests are served
+# by different pods.
 replicaCount: 1
 
 image:
@@ -47,7 +50,7 @@ mongodb:
 # NodeGoat's db:seed script resets the database before loading seed data.
 # Treat this Job as an explicit bootstrap/reset mechanism for GitOps-managed environments.
 dbSeed:
-  enabled: true
+  enabled: false
   backoffLimit: 2
   # With Argo CD automated self-heal, a TTL-deleted Job can be recreated and run again.
   # Keep dbSeed.enabled true only while the environment should bootstrap or reset data.
@@ -57,3 +60,16 @@ dbSeed:
     maxAttempts: 60
     intervalSeconds: 5
     connectionTimeoutSeconds: 5
+
+# Lab Mode declaratively pauses runtime workloads to reduce AWS lab costs.
+# PVCs are preserved because storage templates are not removed.
+labMode:
+  enabled: false
+
+rollout:
+  strategy:
+    blueGreen:
+      autoPromotionEnabled: false
+      previewService:
+        enabled: false
+        port: 80

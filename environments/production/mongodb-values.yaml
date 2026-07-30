@@ -1,5 +1,10 @@
 replicaCount: 1
 
+# Lab Mode declaratively scales MongoDB to zero to reduce AWS compute costs.
+# StatefulSet PVCs remain in place so data can be reused when the lab resumes.
+labMode:
+  enabled: false
+
 image:
   repository: mongo
   tag: "5.0"

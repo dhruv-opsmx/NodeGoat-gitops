@@ -1,5 +1,5 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "nodegoat.fullname" . }}
   labels:
@@ -9,7 +9,14 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
   {{- end }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ ternary 0 .Values.replicaCount .Values.labMode.enabled }}
+  strategy:
+    blueGreen:
+      activeService: {{ include "nodegoat.fullname" . }}
+      autoPromotionEnabled: {{ .Values.rollout.strategy.blueGreen.autoPromotionEnabled }}
+      {{- if .Values.rollout.strategy.blueGreen.previewService.enabled }}
+      previewService: {{ include "nodegoat.fullname" . }}-preview
+      {{- end }}
   selector:
     matchLabels:
       {{- include "nodegoat.selectorLabels" . | nindent 6 }}

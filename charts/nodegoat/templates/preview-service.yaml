@@ -1,0 +1,18 @@
+{{- if .Values.rollout.strategy.blueGreen.previewService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "nodegoat.fullname" . }}-preview
+  labels:
+    {{- include "nodegoat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: preview
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.rollout.strategy.blueGreen.previewService.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "nodegoat.selectorLabels" . | nindent 4 }}
+{{- end }}

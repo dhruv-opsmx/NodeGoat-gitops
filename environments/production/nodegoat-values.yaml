@@ -1,4 +1,7 @@
-replicaCount: 2
+# NodeGoat uses express-session MemoryStore. Running multiple replicas without
+# a shared session store causes users to be logged out when requests are served
+# by different pods.
+replicaCount: 1
 
 image:
   repository: 845322645174.dkr.ecr.us-east-1.amazonaws.com/opsmx/nodegoat
@@ -47,7 +50,7 @@ mongodb:
 # NodeGoat's db:seed script resets data. Production keeps this configurable
 # through values so bootstrap/reset intent is explicit in Git.
 dbSeed:
-  enabled: true
+  enabled: false
   backoffLimit: 2
   ttlSecondsAfterFinished: 300
   activeDeadlineSeconds: 600
@@ -55,3 +58,16 @@ dbSeed:
     maxAttempts: 60
     intervalSeconds: 5
     connectionTimeoutSeconds: 5
+
+# Lab Mode declaratively pauses runtime workloads to reduce AWS lab costs.
+# PVCs are preserved because storage templates are not removed.
+labMode:
+  enabled: false
+
+rollout:
+  strategy:
+    blueGreen:
+      autoPromotionEnabled: false
+      previewService:
+        enabled: false
+        port: 80
