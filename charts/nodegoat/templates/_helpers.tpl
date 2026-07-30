@@ -27,3 +27,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{- define "nodegoat.dbSeedJobName" -}}
+{{- printf "%s-db-seed" (include "nodegoat.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}

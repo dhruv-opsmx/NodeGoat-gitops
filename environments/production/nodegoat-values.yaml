@@ -43,3 +43,15 @@ livenessProbe:
 
 mongodb:
   uri: mongodb://mongodb:27017/NodeGoat
+
+# NodeGoat's db:seed script resets data. Production keeps this configurable
+# through values so bootstrap/reset intent is explicit in Git.
+dbSeed:
+  enabled: true
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 300
+  activeDeadlineSeconds: 600
+  wait:
+    maxAttempts: 60
+    intervalSeconds: 5
+    connectionTimeoutSeconds: 5

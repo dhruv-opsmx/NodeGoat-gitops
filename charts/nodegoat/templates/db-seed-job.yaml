@@ -1,0 +1,107 @@
+{{- if .Values.dbSeed.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "nodegoat.dbSeedJobName" . }}
+  labels:
+    {{- include "nodegoat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: db-seed
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  backoffLimit: {{ .Values.dbSeed.backoffLimit }}
+  {{- with .Values.dbSeed.ttlSecondsAfterFinished }}
+  ttlSecondsAfterFinished: {{ . }}
+  {{- end }}
+  {{- with .Values.dbSeed.activeDeadlineSeconds }}
+  activeDeadlineSeconds: {{ . }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "nodegoat.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: db-seed
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: db-seed
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: MONGODB_URI
+              value: {{ .Values.mongodb.uri | quote }}
+            - name: DB_SEED_WAIT_MAX_ATTEMPTS
+              value: {{ .Values.dbSeed.wait.maxAttempts | quote }}
+            - name: DB_SEED_WAIT_INTERVAL_SECONDS
+              value: {{ .Values.dbSeed.wait.intervalSeconds | quote }}
+            - name: DB_SEED_WAIT_CONNECTION_TIMEOUT_SECONDS
+              value: {{ .Values.dbSeed.wait.connectionTimeoutSeconds | quote }}
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              node <<'NODE'
+              const net = require('net');
+
+              const uri = process.env.MONGODB_URI;
+              const maxAttempts = Number(process.env.DB_SEED_WAIT_MAX_ATTEMPTS || 60);
+              const intervalMs = Number(process.env.DB_SEED_WAIT_INTERVAL_SECONDS || 5) * 1000;
+              const timeoutMs = Number(process.env.DB_SEED_WAIT_CONNECTION_TIMEOUT_SECONDS || 5) * 1000;
+
+              if (!uri) {
+                throw new Error('MONGODB_URI is required before running db:seed');
+              }
+
+              const parsed = new URL(uri);
+              const host = parsed.hostname;
+              const port = Number(parsed.port || 27017);
+
+              function wait(ms) {
+                return new Promise((resolve) => setTimeout(resolve, ms));
+              }
+
+              function canConnect() {
+                return new Promise((resolve) => {
+                  const socket = net.createConnection({ host, port });
+                  socket.setTimeout(timeoutMs);
+                  socket.once('connect', () => {
+                    socket.destroy();
+                    resolve(true);
+                  });
+                  socket.once('timeout', () => {
+                    socket.destroy();
+                    resolve(false);
+                  });
+                  socket.once('error', () => {
+                    socket.destroy();
+                    resolve(false);
+                  });
+                });
+              }
+
+              (async () => {
+                for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+                  if (await canConnect()) {
+                    console.log(`MongoDB is reachable at ${host}:${port}`);
+                    return;
+                  }
+
+                  console.log(`Waiting for MongoDB at ${host}:${port} (${attempt}/${maxAttempts})`);
+                  if (attempt < maxAttempts) {
+                    await wait(intervalMs);
+                  }
+                }
+
+                throw new Error(`MongoDB was not reachable at ${host}:${port} after ${maxAttempts} attempts`);
+              })().catch((error) => {
+                console.error(error.message);
+                process.exit(1);
+              });
+              NODE
+
+              # NodeGoat's db:seed script resets and repopulates the database.
+              # Keep this Job enabled only when the environment should bootstrap or reset seed data.
+              npm run db:seed
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+{{- end }}

@@ -191,6 +191,78 @@ should be necessary after bootstrap.
 
 ---
 
+# Database Bootstrap
+
+NodeGoat requires MongoDB seed data before the application can accept signups. The seed script creates required collections and counters, including the `userId` sequence used by the application.
+
+Old workflow:
+
+```
+MongoDB
+
+↓
+
+NodeGoat
+
+↓
+
+Manual kubectl exec
+
+↓
+
+db:seed
+```
+
+That workflow depended on an operator running `npm run db:seed` inside a NodeGoat pod after deployment. It was not fully declarative because database initialization lived outside Git and outside Argo CD reconciliation.
+
+New workflow:
+
+```
+Git Push
+
+↓
+
+Argo CD
+
+↓
+
+MongoDB
+
+↓
+
+Database Seed Job
+
+↓
+
+NodeGoat
+```
+
+The NodeGoat Helm chart now renders a first-class Kubernetes `Job` when `dbSeed.enabled` is `true`. The Job uses the same NodeGoat image and `MONGODB_URI` value as the Deployment, waits until MongoDB is reachable, then runs:
+
+```bash
+npm run db:seed
+```
+
+The Job is intentionally modeled as a bootstrap/reset mechanism because NodeGoat's seed script resets and repopulates the database. Enabling or disabling that behavior is controlled through Git-managed values:
+
+```yaml
+dbSeed:
+  enabled: true
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 300
+  activeDeadlineSeconds: 600
+  wait:
+    maxAttempts: 60
+    intervalSeconds: 5
+    connectionTimeoutSeconds: 5
+```
+
+Argo CD sync waves order the seed Job before the NodeGoat Deployment when seeding is enabled. MongoDB is deployed by its own Application, so the Job also performs an active reachability check before running the seed command.
+
+This is more GitOps-compliant because bootstrap intent, retry policy, image version, MongoDB connection settings, and environment-specific behavior are all declared in Git and reconciled by Kubernetes and Argo CD.
+
+---
+
 # Environments
 
 | Environment | Namespace |

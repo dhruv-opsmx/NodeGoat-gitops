@@ -4,6 +4,10 @@ metadata:
   name: {{ include "nodegoat.fullname" . }}
   labels:
     {{- include "nodegoat.labels" . | nindent 4 }}
+  {{- if .Values.dbSeed.enabled }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  {{- end }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:

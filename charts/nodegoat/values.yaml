@@ -43,3 +43,17 @@ livenessProbe:
 
 mongodb:
   uri: mongodb://mongodb:27017/NodeGoat
+
+# NodeGoat's db:seed script resets the database before loading seed data.
+# Treat this Job as an explicit bootstrap/reset mechanism for GitOps-managed environments.
+dbSeed:
+  enabled: true
+  backoffLimit: 2
+  # With Argo CD automated self-heal, a TTL-deleted Job can be recreated and run again.
+  # Keep dbSeed.enabled true only while the environment should bootstrap or reset data.
+  ttlSecondsAfterFinished: 300
+  activeDeadlineSeconds: 600
+  wait:
+    maxAttempts: 60
+    intervalSeconds: 5
+    connectionTimeoutSeconds: 5

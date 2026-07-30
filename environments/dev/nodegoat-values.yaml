@@ -42,3 +42,13 @@ livenessProbe:
 
 mongodb:
   uri: mongodb://mongodb:27017/NodeGoat
+
+dbSeed:
+  enabled: true
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 300
+  activeDeadlineSeconds: 600
+  wait:
+    maxAttempts: 60
+    intervalSeconds: 5
+    connectionTimeoutSeconds: 5
